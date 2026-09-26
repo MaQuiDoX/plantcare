@@ -11,6 +11,13 @@ do $$ begin
   begin perform public.generate_user_alerts('a7157311-ace0-4a59-9600-000000000002');raise exception 'FAIL: generación ajena';exception when insufficient_privilege then null;end;
 end; $$;
 set local role service_role;
+do $$ begin
+  if public.notification_season_marker(-34,'2026-12-31')<>public.notification_season_marker(-34,'2027-01-01')
+    or public.notification_season_marker(40,'2026-12-31')<>public.notification_season_marker(40,'2027-02-28') then
+    raise exception 'FAIL: Año Nuevo no cambia la estación'; end if;
+  if public.notification_season_marker(-34,'2027-02-28')=public.notification_season_marker(-34,'2027-03-01') then
+    raise exception 'FAIL: cambio estacional omitido'; end if;
+end; $$;
 insert into public.weather_snapshots(user_id,latitude,longitude,temperature_c,humidity_percent,rain_mm,provider,observed_at,expires_at)
 values('a7157311-ace0-4a59-9600-000000000001',-34.60,-58.38,38,30,0,'openweathermap',now(),now()+interval '1 hour');
 set local role authenticated;

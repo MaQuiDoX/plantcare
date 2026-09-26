@@ -54,6 +54,14 @@ select a.read_at is null and a.expires_at>now() and exists(
 revoke all on function public.alert_is_current(public.alerts) from public,anon,authenticated;
 grant execute on function public.alert_is_current(public.alerts) to service_role;
 
+create function public.notification_season_marker(p_lat numeric,p_day date) returns text language sql immutable set search_path='' as $$
+  select (case when p_lat is null then 'none' when abs(p_lat)<10 then 'equator' when p_lat<0 then 'south' else 'north' end)
+    ||':'||extract(year from (p_day-interval '2 months'))::text||':'||
+    (public.watering_recommendation(7,'adaptive','outdoor',p_lat,p_day,null,null,null)->>'season');
+$$;
+revoke all on function public.notification_season_marker(numeric,date) from public,anon,authenticated;
+grant execute on function public.notification_season_marker(numeric,date) to service_role;
+
 create function public.generate_user_alerts(p_user uuid) returns void language plpgsql security definer set search_path='' as $$
 declare u public.users; day date; local_time time; g record; w public.weather_snapshots; season text; hemisphere text; marker text; event text; message text;
 begin
@@ -71,7 +79,7 @@ begin
   end if;
   hemisphere:=case when u.latitude is null then 'none' when abs(u.latitude)<10 then 'equator' when u.latitude<0 then 'south' else 'north' end;
   season:=public.watering_recommendation(7,'adaptive','outdoor',u.latitude,day,null,null,null)->>'season';
-  marker:=hemisphere||':'||extract(year from day)::text||':'||season;
+  marker:=public.notification_season_marker(u.latitude,day);
   if u.seasonal_alerts and u.season_marker is not null and split_part(u.season_marker,':',1)=hemisphere
     and u.season_marker<>marker and hemisphere in ('south','north') then
     message:=case season when 'Invierno' then 'Revisá corrientes frías y el contacto con ventanas heladas. La menor luz puede reducir la necesidad de agua.'
