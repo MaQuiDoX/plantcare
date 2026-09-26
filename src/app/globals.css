@@ -260,5 +260,11 @@ code { background:#f0f2eb; padding:2px 4px; border-radius:3px; font-size:12px; o
 .pot-result ul { list-style:none; padding:0; }
 .pot-result li { display:flex; justify-content:space-between; gap:15px; padding:12px 0; border-bottom:1px solid #d4decb; }
 .pot-result li strong { white-space:nowrap; }
+.notification-inbox { margin:2rem 0; }
+.notification-inbox article { margin-top:1rem; }
+.notification-inbox article h3 { font-family:Georgia,serif; font-size:23px; margin:12px 0; }
+.notification-inbox article time { color:var(--muted); font-size:12px; }
+.device-list { list-style:none; padding:0; }
+.device-list li { display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; padding:12px 0; border-bottom:1px solid var(--line); }
 @media(max-width:800px) { .care-calendar ol { grid-template-columns:repeat(4,minmax(0,1fr)); } }
 @media(max-width:450px) { .care-calendar ol { grid-template-columns:repeat(2,minmax(0,1fr)); }.weather-reading span { display:block; }.pot-result { padding:16px; } }

@@ -6,8 +6,9 @@ const tables = {
   user_plants: [
     { ...defaults, user_id: owner, id: "b7157311-ace0-4a59-9200-000000000010", nickname: "Monstera del living", location_label: "Junto al sillón", created_at: "2026-09-01T12:00:00Z", plants: { scientific_name: "Monstera deliciosa" } },
     { ...defaults, user_id: owner, id: "b7157311-ace0-4a59-9200-000000000011", nickname: "Lavanda del balcón", location_label: "Balcón", placement: "outdoor", created_at: "2026-08-01T12:00:00Z", plants: { scientific_name: "Lavandula angustifolia" } },
-  ], journal_entries: [], media_assets: [], storage_cleanup: [], ai_analyses: [], care_schedules: [], weather_snapshots: [],
+  ], journal_entries: [], media_assets: [], storage_cleanup: [], ai_analyses: [], care_schedules: [], weather_snapshots: [], alerts: [], push_subscriptions: [],
 };
+tables.alerts.push({id:"d7157311-ace0-4a59-9200-000000000050",user_id:"a7157311-ace0-4a59-9200-000000000050",user_plant_id:null,kind:"season_change",title:"Cuidados de primavera",body:"Observá nuevos brotes y cambios de luz.",created_at:"2026-09-26T12:00:00Z",read_at:null});
 tables.user_plants.push({...defaults,id:"b7157311-ace0-4a59-9200-000000000040",user_id:"a7157311-ace0-4a59-9200-000000000040",nickname:"Monstera de Sol",species_label:"Monstera deliciosa",pot_diameter_cm:15,pot_height_cm:15,has_drainage:true,created_at:"2026-09-01T12:00:00Z"});
 function syncCare(plantId) {
   const last=tables.journal_entries.filter(e=>e.user_plant_id===plantId&&e.kind==="watering").map(e=>e.entry_date).sort().at(-1)??null;
@@ -56,6 +57,7 @@ export function catalogRequest({ request, response, url, body, raw, user, send, 
   if (path === "/rest/v1/plants") return send(200, []);
   if (path.startsWith("/rest/v1/rpc/")) {
     const fn = path.split("/").at(-1);
+    if(fn==="refresh_my_alerts")return send(200,null);
     if(fn==="save_watering_schedule") {
       const plant=tables.user_plants.find(p=>p.id===body.p_plant&&p.user_id===user.id&&!p.archived_at);
       if(!plant)return failure("42501",403);

@@ -7,6 +7,7 @@ const users = new Map();
 const secret = "plantcare-e2e-only-not-a-production-key";
 const initial = { id: "a7157311-ace0-4a59-9200-000000000010", email: "ana@example.test", password: "mi jardín tiene hojas", confirmed: true, name: "Ana" };
 users.set(initial.email, initial);
+users.set("notify@example.test", { id: "a7157311-ace0-4a59-9200-000000000050", email: "notify@example.test", password: "mi jardín tiene hojas", confirmed: true, name: "Nora" });
 users.set("care@example.test", { id: "a7157311-ace0-4a59-9200-000000000040", email: "care@example.test", password: "mi jardín tiene hojas", confirmed: true, name: "Sol" });
 users.set("ai@example.test", { id: "a7157311-ace0-4a59-9200-000000000030", email: "ai@example.test", password: "mi jardín tiene hojas", confirmed: true, name: "Luz" });
 users.set("crud@example.test", { id: "a7157311-ace0-4a59-9200-000000000020", email: "crud@example.test", password: "mi jardín tiene hojas", confirmed: true, name: "Martina" });
@@ -75,8 +76,8 @@ createServer(async (request, response) => {
     return send(200, authUser(user));
   }
   if (url.pathname === "/rest/v1/users") {
-    if(request.method==="PATCH") Object.assign(user,{latitude:body.latitude,longitude:body.longitude,timezone:body.timezone});
-    return send(200, { display_name: user.name, timezone: user.timezone ?? "America/Argentina/Buenos_Aires", latitude:user.latitude ?? null, longitude:user.longitude ?? null });
+    if(request.method==="PATCH")for(const key of ["latitude","longitude","timezone","care_alerts","seasonal_alerts","weather_alerts","push_reminders","email_reminders","reminder_time"])if(Object.hasOwn(body,key))user[key]=body[key];
+    return send(200, { display_name: user.name, timezone: user.timezone ?? "America/Argentina/Buenos_Aires", latitude:user.latitude ?? null, longitude:user.longitude ?? null, care_alerts:user.care_alerts??true,seasonal_alerts:user.seasonal_alerts??true,weather_alerts:user.weather_alerts??false,push_reminders:user.push_reminders??false,email_reminders:user.email_reminders??false,reminder_time:user.reminder_time??"09:00:00" });
   }
   return catalogRequest({ request, response, url, body, raw, user, send, failure });
 }).listen(54329, "127.0.0.1", () => console.log("Contrato Supabase de pruebas en 54329"));

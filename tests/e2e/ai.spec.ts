@@ -40,7 +40,7 @@ test("diagnóstico presenta hipótesis y comprobaciones sin modificar la ficha",
   await page.goto("/plants/analyses/c7157311-ace0-4a59-9200-000000000031");
   await expect(page.getByRole("heading", { name: "Qué podría estar pasando" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Posible exceso de agua" })).toBeVisible();
-  await expect(page.getByText("Aparecieron hojas amarillas.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByText("Aparecieron hojas amarillas.", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /Confirmar|Crear planta/ })).toHaveCount(0);
   await page.getByRole("link", { name: "Volver a Poto de Luz" }).click();
   await expect(page.getByText("Especie sin identificar", { exact: true })).toBeVisible();
