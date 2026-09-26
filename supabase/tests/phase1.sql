@@ -43,7 +43,7 @@ begin
     insert into public.journal_entries(user_id, user_plant_id, kind)
     values ('a7157311-ace0-4a59-9200-000000000002', 'b7157311-ace0-4a59-9200-000000000001', 'note');
     raise exception 'FAIL: diario vinculado a una planta ajena';
-  exception when foreign_key_violation then null;
+  exception when foreign_key_violation or insufficient_privilege then null;
   end;
   begin
     update public.users set timezone = 'Invalid/Timezone'

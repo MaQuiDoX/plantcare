@@ -43,6 +43,7 @@ export const plantDetailSchema = plantCardSchema.extend({
   pot_diameter_cm: z.number().nullable(), pot_height_cm: z.number().nullable(),
   pot_material: z.enum(["plastic", "terracotta", "ceramic", "other"]).nullable(),
   has_drainage: z.boolean().nullable(), substrate_notes: z.string().nullable(), version: z.number().int(),
+  ai_profile: z.unknown().optional(),
 });
 export type PlantDetail = z.infer<typeof plantDetailSchema>;
 
@@ -50,7 +51,7 @@ export async function getPlantDetail(id: string) {
   const user = await requireUser();
   if (!z.uuid().safeParse(id).success) notFound();
   const supabase = await createClient();
-  const { data, error } = await supabase.from("user_plants").select("id,nickname,species_label,location_label,placement,created_at,plants(scientific_name),plant_id,acquired_on,archived_at,light,pot_diameter_cm,pot_height_cm,pot_material,has_drainage,substrate_notes,version").eq("id", id).eq("user_id", user.id).maybeSingle();
+  const { data, error } = await supabase.from("user_plants").select("id,nickname,species_label,location_label,placement,created_at,plants(scientific_name),plant_id,acquired_on,archived_at,light,pot_diameter_cm,pot_height_cm,pot_material,has_drainage,substrate_notes,version,ai_profile").eq("id", id).eq("user_id", user.id).maybeSingle();
   if (error) throw new Error("No se pudo leer la planta.");
   if (!data) notFound();
   return plantDetailSchema.parse(data);

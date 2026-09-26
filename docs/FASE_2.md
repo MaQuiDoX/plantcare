@@ -115,7 +115,7 @@ npm.cmd run dev
 ```
 
 Abrí http://localhost:3000. Sin variables válidas, `/plants` redirige a `/setup` y `/login` permite revisar la interfaz con el formulario deshabilitado. Después de modificar variables reiniciá Next.js. Configurá las variables antes de compilar para despliegue: Next.js fija variables NEXT_PUBLIC durante el build.
-
+  
 Para probar la compilación de producción, detené el servidor de desarrollo y ejecutá:
 
 ```powershell

@@ -1,11 +1,15 @@
 // Servidor de contrato exclusivo de pruebas. No sustituye Supabase ni verifica RLS.
 import { createServer } from "node:http";
 import { createHmac, randomUUID } from "node:crypto";
+import { catalogRequest } from "./catalog.mjs";
 
 const users = new Map();
 const secret = "plantcare-e2e-only-not-a-production-key";
 const initial = { id: "a7157311-ace0-4a59-9200-000000000010", email: "ana@example.test", password: "mi jardín tiene hojas", confirmed: true, name: "Ana" };
 users.set(initial.email, initial);
+users.set("ai@example.test", { id: "a7157311-ace0-4a59-9200-000000000030", email: "ai@example.test", password: "mi jardín tiene hojas", confirmed: true, name: "Luz" });
+users.set("crud@example.test", { id: "a7157311-ace0-4a59-9200-000000000020", email: "crud@example.test", password: "mi jardín tiene hojas", confirmed: true, name: "Martina" });
+users.set("other@example.test", { id: "a7157311-ace0-4a59-9200-000000000021", email: "other@example.test", password: "mi jardín tiene hojas", confirmed: true, name: "Otra cuenta" });
 function authUser(user) {
   return { id: user.id, aud: "authenticated", role: "authenticated", email: user.email, email_confirmed_at: user.confirmed ? "2026-01-01T00:00:00Z" : null, app_metadata: { provider: "email", providers: ["email"] }, user_metadata: { display_name: user.name }, identities: [], created_at: "2026-01-01T00:00:00Z" };
 }
@@ -29,9 +33,10 @@ function bearerUser(request) {
 
 createServer(async (request, response) => {
   const url = new URL(request.url, "http://127.0.0.1:54329");
-  let raw = "";
-  for await (const chunk of request) raw += chunk;
-  const body = raw ? JSON.parse(raw) : {};
+  const chunks = [];
+  for await (const chunk of request) chunks.push(chunk);
+  const raw = Buffer.concat(chunks);
+  const body = raw.length && request.headers["content-type"]?.includes("application/json") ? JSON.parse(raw.toString()) : {};
   const send = (status, value, headers = {}) => {
     response.writeHead(status, { "content-type": "application/json", ...headers });
     response.end(JSON.stringify(value));
@@ -68,16 +73,6 @@ createServer(async (request, response) => {
     if (request.method === "PUT" && body.password) user.password = body.password;
     return send(200, authUser(user));
   }
-  if (url.pathname === "/rest/v1/users") return send(200, { display_name: user.name });
-  if (url.pathname === "/rest/v1/user_plants") {
-    let plants = user.id === initial.id ? [
-      { id: "b7157311-ace0-4a59-9200-000000000010", nickname: "Monstera del living", location_label: "Junto al sillón", placement: "indoor", created_at: "2026-09-01T12:00:00Z", plants: { scientific_name: "Monstera deliciosa" } },
-      { id: "b7157311-ace0-4a59-9200-000000000011", nickname: "Lavanda del balcón", location_label: "Balcón", placement: "outdoor", created_at: "2026-08-01T12:00:00Z", plants: { scientific_name: "Lavandula angustifolia" } },
-    ] : [];
-    if (url.searchParams.get("placement") === "eq.indoor") plants = plants.filter((plant) => plant.placement === "indoor");
-    const term = url.searchParams.get("nickname")?.replace(/^ilike\.%|%$/g, "");
-    if (term) plants = plants.filter((plant) => plant.nickname.toLowerCase().includes(term.toLowerCase()));
-    return send(200, plants, { "content-range": `0-${Math.max(0, plants.length - 1)}/${plants.length}` });
-  }
-  failure("not_found", 404);
+  if (url.pathname === "/rest/v1/users") return send(200, { display_name: user.name, timezone: "America/Argentina/Buenos_Aires" });
+  return catalogRequest({ request, response, url, body, raw, user, send, failure });
 }).listen(54329, "127.0.0.1", () => console.log("Contrato Supabase de pruebas en 54329"));
