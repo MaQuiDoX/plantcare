@@ -6,8 +6,21 @@ const tables = {
   user_plants: [
     { ...defaults, user_id: owner, id: "b7157311-ace0-4a59-9200-000000000010", nickname: "Monstera del living", location_label: "Junto al sillón", created_at: "2026-09-01T12:00:00Z", plants: { scientific_name: "Monstera deliciosa" } },
     { ...defaults, user_id: owner, id: "b7157311-ace0-4a59-9200-000000000011", nickname: "Lavanda del balcón", location_label: "Balcón", placement: "outdoor", created_at: "2026-08-01T12:00:00Z", plants: { scientific_name: "Lavandula angustifolia" } },
-  ], journal_entries: [], media_assets: [], storage_cleanup: [], ai_analyses: [],
+  ], journal_entries: [], media_assets: [], storage_cleanup: [], ai_analyses: [], care_schedules: [], weather_snapshots: [],
 };
+tables.user_plants.push({...defaults,id:"b7157311-ace0-4a59-9200-000000000040",user_id:"a7157311-ace0-4a59-9200-000000000040",nickname:"Monstera de Sol",species_label:"Monstera deliciosa",pot_diameter_cm:15,pot_height_cm:15,has_drainage:true,created_at:"2026-09-01T12:00:00Z"});
+function syncCare(plantId) {
+  const last=tables.journal_entries.filter(e=>e.user_plant_id===plantId&&e.kind==="watering").map(e=>e.entry_date).sort().at(-1)??null;
+  for(const row of tables.care_schedules.filter(c=>c.user_plant_id===plantId)) { row.last_watered_on=last; row.version++; }
+}
+function fixtureAgenda(user) {
+  const today=new Intl.DateTimeFormat("en-CA",{timeZone:user.timezone??"America/Argentina/Buenos_Aires",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  return tables.care_schedules.filter(c=>c.user_id===user.id).flatMap(c=>{
+    const plant=tables.user_plants.find(p=>p.id===c.user_plant_id&&!p.archived_at); if(!plant)return[];
+    const due=new Date(`${c.last_watered_on??c.anchor_on}T12:00:00Z`);due.setUTCDate(due.getUTCDate()+c.base_interval_days);
+    return [{...c,nickname:plant.nickname,placement:plant.placement,today,due_on:due.toISOString().slice(0,10),weather_observed_at:null,recommendation:{days:c.base_interval_days,season:"Sin estación",seasonFactor:1,weatherFactor:1,weatherUsed:false,version:"watering-v1"}}];
+  });
+}
 const aiOwner = "a7157311-ace0-4a59-9200-000000000030";
 const aiCare = { lighting: "Luz indirecta brillante.", location: "Cerca de una ventana con cortina.", temperature: "Evitar corrientes frías.", watering: "Comprobar humedad antes de regar.", substrate: "Mezcla aireada con buen drenaje." };
 const aiCandidate = { name: "Monstera deliciosa", commonNames: ["Costilla de Adán"], family: "Araceae", score: 0.86, care: aiCare };
@@ -43,6 +56,16 @@ export function catalogRequest({ request, response, url, body, raw, user, send, 
   if (path === "/rest/v1/plants") return send(200, []);
   if (path.startsWith("/rest/v1/rpc/")) {
     const fn = path.split("/").at(-1);
+    if(fn==="save_watering_schedule") {
+      const plant=tables.user_plants.find(p=>p.id===body.p_plant&&p.user_id===user.id&&!p.archived_at);
+      if(!plant)return failure("42501",403);
+      let row=tables.care_schedules.find(c=>c.user_plant_id===plant.id&&c.user_id===user.id);
+      if(row&&row.version!==body.p_version)return failure("40001",409);
+      if(!row){row={id:randomUUID(),user_id:user.id,user_plant_id:plant.id,version:0,last_watered_on:null,created_at:new Date().toISOString()};tables.care_schedules.push(row);}
+      Object.assign(row,{mode:body.p_mode,base_interval_days:body.p_base,anchor_on:body.p_anchor,enabled:body.p_enabled,version:row.version+1});
+      syncCare(plant.id);
+      return send(200,row.id);
+    }
     if (fn === "apply_ai_identification") {
       const analysis = tables.ai_analyses.find((a) => a.id === body.p_id && a.user_id === user.id && a.kind === "identification" && a.status === "succeeded");
       if (!analysis) return failure("42501", 403);
@@ -72,6 +95,7 @@ export function catalogRequest({ request, response, url, body, raw, user, send, 
       if ((entry && entry.version !== body.p_version) || (!entry && body.p_version !== null)) return failure("40001", 409);
       if (!entry) { entry = { id: body.p_id, user_id: user.id, user_plant_id: plant.id, version: 0, created_at: new Date().toISOString() }; tables.journal_entries.push(entry); }
       Object.assign(entry, { entry_date: body.p_date, kind: body.p_kind, notes: body.p_notes, water_ml: body.p_water_ml, height_cm: body.p_height_cm, version: entry.version + 1 });
+      syncCare(plant.id);
       if (body.p_remove_photo || body.p_photo_path) removeMedia(entry.id);
       if (body.p_photo_path) {
         tables.media_assets.push({ id: randomUUID(), user_id: user.id, user_plant_id: plant.id, journal_entry_id: entry.id, object_path: body.p_photo_path });
@@ -82,14 +106,14 @@ export function catalogRequest({ request, response, url, body, raw, user, send, 
     return failure("unknown_rpc", 404);
   }
   const table = path.replace("/rest/v1/", "");
-  if (!Object.hasOwn(tables, table)) return failure("not_found", 404);
+  if (!Object.hasOwn(tables, table)&&table!=="watering_agenda") return failure("not_found", 404);
   if (request.method === "POST") {
     if (body.user_id !== user.id) return failure("42501", 403);
     if (tables[table].some((r) => r.id === body.id)) return failure("23505", 409);
     const row = { ...defaults, ...body, created_at: new Date().toISOString() };
     tables[table].push(row); return send(201, null);
   }
-  let rows = tables[table].filter((r) => r.user_id === user.id);
+  let rows = (table==="watering_agenda" ? fixtureAgenda(user) : tables[table]).filter((r) => r.user_id === user.id);
   for (const [key, filter] of url.searchParams) {
     if (["select", "order", "offset", "limit"].includes(key)) continue;
     if (filter.startsWith("eq.")) rows = rows.filter((r) => String(r[key]) === filter.slice(3));
@@ -102,6 +126,7 @@ export function catalogRequest({ request, response, url, body, raw, user, send, 
     if (table === "user_plants") rows.forEach((r) => removeEntries(r.id));
     if (table === "journal_entries") rows.forEach((r) => removeMedia(r.id));
     tables[table] = tables[table].filter((r) => !rows.includes(r));
+    if(table==="journal_entries")rows.forEach(r=>syncCare(r.user_plant_id));
   }
   rows.sort((a, b) => (b.entry_date ?? b.created_at ?? "").localeCompare(a.entry_date ?? a.created_at ?? ""));
   const count = rows.length;

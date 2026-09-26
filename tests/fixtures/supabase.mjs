@@ -7,6 +7,7 @@ const users = new Map();
 const secret = "plantcare-e2e-only-not-a-production-key";
 const initial = { id: "a7157311-ace0-4a59-9200-000000000010", email: "ana@example.test", password: "mi jardín tiene hojas", confirmed: true, name: "Ana" };
 users.set(initial.email, initial);
+users.set("care@example.test", { id: "a7157311-ace0-4a59-9200-000000000040", email: "care@example.test", password: "mi jardín tiene hojas", confirmed: true, name: "Sol" });
 users.set("ai@example.test", { id: "a7157311-ace0-4a59-9200-000000000030", email: "ai@example.test", password: "mi jardín tiene hojas", confirmed: true, name: "Luz" });
 users.set("crud@example.test", { id: "a7157311-ace0-4a59-9200-000000000020", email: "crud@example.test", password: "mi jardín tiene hojas", confirmed: true, name: "Martina" });
 users.set("other@example.test", { id: "a7157311-ace0-4a59-9200-000000000021", email: "other@example.test", password: "mi jardín tiene hojas", confirmed: true, name: "Otra cuenta" });
@@ -73,6 +74,9 @@ createServer(async (request, response) => {
     if (request.method === "PUT" && body.password) user.password = body.password;
     return send(200, authUser(user));
   }
-  if (url.pathname === "/rest/v1/users") return send(200, { display_name: user.name, timezone: "America/Argentina/Buenos_Aires" });
+  if (url.pathname === "/rest/v1/users") {
+    if(request.method==="PATCH") Object.assign(user,{latitude:body.latitude,longitude:body.longitude,timezone:body.timezone});
+    return send(200, { display_name: user.name, timezone: user.timezone ?? "America/Argentina/Buenos_Aires", latitude:user.latitude ?? null, longitude:user.longitude ?? null });
+  }
   return catalogRequest({ request, response, url, body, raw, user, send, failure });
 }).listen(54329, "127.0.0.1", () => console.log("Contrato Supabase de pruebas en 54329"));

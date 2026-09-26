@@ -12,6 +12,6 @@ export default defineConfig({
   webServer: [
     { command: "node tests/fixtures/supabase.mjs", url: "http://127.0.0.1:54329/health", reuseExistingServer: false },
     { command: "npm run dev -- --hostname 127.0.0.1 --port 3100", url: "http://127.0.0.1:3100/login", reuseExistingServer: false, timeout: 120_000,
-      env: { NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54329", NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_local_e2e_fixture", APP_URL: "http://127.0.0.1:3100", SUPABASE_SECRET_KEY: "", PLANTNET_API_KEY: "", GEMINI_API_KEY: "", GEMINI_MODEL: "" } },
+      env: { NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54329", NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_local_e2e_fixture", APP_URL: "http://127.0.0.1:3100", SUPABASE_SECRET_KEY: "", PLANTNET_API_KEY: "", GEMINI_API_KEY: "", GEMINI_MODEL: "", OPENWEATHER_API_KEY: "" } },
   ],
 });

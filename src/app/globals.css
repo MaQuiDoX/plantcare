@@ -231,3 +231,34 @@ code { background:#f0f2eb; padding:2px 4px; border-radius:3px; font-size:12px; o
 .ai-accept .button { margin-top:1rem; }
 .ai-hypothesis { border-left:3px solid #819a71; padding-left:1.2rem; margin:1.8rem 0; }
 .ai-history a { color:inherit; }
+.care-actions { display:flex; flex-wrap:wrap; align-items:center; gap:1rem; margin:1.4rem 0; }
+.care-list { display:grid; gap:1.5rem; margin:2rem 0; }
+.care-card-heading { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1rem; }
+.care-card-heading h2 { margin:8px 0; }
+.care-card p { line-height:1.7; margin:12px 0; }
+.watering-record { display:grid; justify-items:start; gap:1rem; border-top:1px solid var(--line); padding-top:1rem; margin-top:1rem; }
+.watering-record label { display:flex; gap:.6rem; align-items:center; }
+.weather-panel { background:#edf2e5; border:1px solid #dbe3d1; border-radius:16px; padding:24px; display:grid; gap:20px; margin:1.5rem 0; }
+.weather-panel p { line-height:1.7; margin:8px 0; }
+.weather-panel h2,.care-calendar h2 { font-family:Georgia,serif; font-size:24px; }
+.weather-reading { font-size:28px; }
+.weather-reading span { font-size:14px; }
+.care-location { margin:1.5rem 0 2rem; }
+.care-location summary { font-weight:600; padding:12px 0; }
+.care-calendar { margin:2rem 0; }
+.care-calendar>p { margin:10px 0 18px; color:var(--muted); }
+.care-calendar ol { list-style:none; padding:0; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; }
+.care-calendar li { min-height:95px; border:1px solid var(--line); border-radius:10px; padding:10px; background:white; }
+.care-calendar time { display:block; font-size:11px; color:var(--muted); margin-bottom:10px; }
+.care-calendar a { display:block; background:#e9efdf; border-radius:5px; padding:5px; margin-bottom:5px; font-size:12px; overflow-wrap:anywhere; }
+.pot-calculator { display:grid; gap:1.5rem; }
+.pot-calculator .form-grid { margin:1.5rem 0; }
+.pot-calculator p { line-height:1.7; margin:12px 0; }
+.pot-suggestion { background:#edf2e5; padding:16px; border-radius:10px; }
+.pot-result { background:#eef2e7; padding:22px; border-radius:12px; margin-top:22px; }
+.pot-liters strong { font-size:32px; font-family:Georgia,serif; }
+.pot-result ul { list-style:none; padding:0; }
+.pot-result li { display:flex; justify-content:space-between; gap:15px; padding:12px 0; border-bottom:1px solid #d4decb; }
+.pot-result li strong { white-space:nowrap; }
+@media(max-width:800px) { .care-calendar ol { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+@media(max-width:450px) { .care-calendar ol { grid-template-columns:repeat(2,minmax(0,1fr)); }.weather-reading span { display:block; }.pot-result { padding:16px; } }
