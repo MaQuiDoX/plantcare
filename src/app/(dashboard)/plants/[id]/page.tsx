@@ -1,0 +1,27 @@
+/* eslint-disable @next/next/no-img-element -- Las fotos se sirven por una ruta autenticada sin caché. */
+import Link from "next/link";
+import { CalendarDays, Camera, Leaf, Pencil, Plus, Sprout } from "lucide-react";
+import { getPlantDetail } from "@/features/plants/queries";
+import { getJournal, JOURNAL_PAGE_SIZE } from "@/features/journal/queries";
+import { placements, lights, materials } from "@/features/plants/validation";
+import { formatDay, kinds } from "@/features/journal/validation";
+import { PlantControls, CleanupControl } from "@/features/plants/plant-controls";
+
+export const metadata = { title: "Mi planta" };
+export default async function PlantPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ page?: string; cleanup?: string }> }) {
+  const { id } = await params;
+  const search = await searchParams;
+  const requested = Number(search.page);
+  const page = Number.isSafeInteger(requested) && requested > 0 && requested < 10000 ? requested : 1;
+  const plant = await getPlantDetail(id);
+  const journal = await getJournal(id, page);
+  return <><Link className="text-link" href={plant.archived_at ? "/plants?archived=1" : "/plants"}>← Volver a mi colección</Link>
+    <div className="plant-detail-heading"><div className="detail-icon"><Sprout size={38} strokeWidth={1.3} /></div><div><span className="eyebrow">{plant.archived_at ? "PLANTA ARCHIVADA" : "UN SER VIVO, UNA HISTORIA"}</span><h1>{plant.nickname}</h1><p>{plant.plants?.scientific_name ?? plant.species_label ?? "Especie sin identificar"}</p></div>{!plant.archived_at && <Link href={`/plants/${id}/edit`} className="button button-secondary"><Pencil size={16} /> Editar ficha</Link>}</div>
+    {plant.archived_at && <p className="notice">Esta planta está archivada. Su historia se conserva; restaurala desde «Administrar esta planta» para seguir registrando momentos.</p>}
+    <section className="plant-facts" aria-label="Ficha de la planta"><div><span>Ambiente</span><strong>{placements[plant.placement]}</strong></div><div><span>Ubicación</span><strong>{plant.location_label ?? "Sin registrar"}</strong></div><div><span>Luz</span><strong>{plant.light ? lights[plant.light] : "Sin registrar"}</strong></div><div><span>Fecha de llegada</span><strong>{plant.acquired_on ? formatDay(plant.acquired_on) : "Sin registrar"}</strong></div><div><span>Maceta</span><strong>{plant.pot_diameter_cm ? `Ø ${plant.pot_diameter_cm} cm` : "Diámetro sin registrar"}{plant.pot_height_cm ? ` · ${plant.pot_height_cm} cm de alto` : ""}</strong></div><div><span>Material y drenaje</span><strong>{plant.pot_material ? materials[plant.pot_material] : "Material sin registrar"} · {plant.has_drainage === null ? "Drenaje sin registrar" : plant.has_drainage ? "Con drenaje" : "Sin drenaje"}</strong></div>{plant.substrate_notes && <div className="full-width"><span>Sustrato</span><p>{plant.substrate_notes}</p></div>}</section>
+    <section className="journal-section" id="diario" aria-labelledby="journal-title"><div className="collection-toolbar"><div><span className="eyebrow">SU EVOLUCIÓN EN EL TIEMPO</span><h2 id="journal-title">Diario de la planta <span>{journal.count}</span></h2></div>{!plant.archived_at && <Link className="button button-primary" href={`/plants/${id}/journal/new`}><Plus size={17} /> Nuevo registro</Link>}</div>
+      {journal.entries.length ? <ol className="timeline">{journal.entries.map((entry) => <li key={entry.id} id={`entry-${entry.id}`}><span className="timeline-dot"><Leaf size={14} /></span><article className="journal-card"><div className="journal-card-heading"><div><time dateTime={entry.entry_date}><CalendarDays size={14} />{formatDay(entry.entry_date)}</time><h3>{kinds[entry.kind]}</h3></div>{!plant.archived_at && <Link className="text-link" href={`/plants/${id}/journal/${entry.id}/edit`}>Editar registro <Pencil size={13} /></Link>}</div>{entry.notes && <p className="journal-notes">{entry.notes}</p>}{(entry.water_ml !== null || entry.height_cm !== null) && <div className="measurement-row">{entry.water_ml !== null && <span>Riego: {entry.water_ml} ml</span>}{entry.height_cm !== null && <span>Altura: {entry.height_cm} cm</span>}</div>}{entry.media_assets.length > 0 && <div className="journal-photos">{entry.media_assets.map((media) => <a key={media.id} href={`/plants/media/${media.id}`} target="_blank" rel="noreferrer"><img src={`/plants/media/${media.id}`} alt={`${plant.nickname} · ${formatDay(entry.entry_date)}`} loading="lazy" /></a>)}</div>}</article></li>)}</ol> : <div className="empty-collection"><div className="empty-icon"><Camera size={30} /></div><h3>{page > 1 ? "No hay registros en esta página" : "Su historia empieza con una mirada"}</h3><p>Guardá notas y fotos para recordar los pequeños cambios de tu planta.</p>{page > 1 && <Link href={`/plants/${id}#diario`} className="text-link">Volver al primer registro</Link>}</div>}
+      {(journal.count > JOURNAL_PAGE_SIZE || page > 1) && <nav className="pagination" aria-label="Páginas del diario">{page > 1 && <Link href={`/plants/${id}?page=${page - 1}#diario`}>← Anterior</Link>}<span>Página {page}</span>{page * JOURNAL_PAGE_SIZE < journal.count && <Link href={`/plants/${id}?page=${page + 1}#diario`}>Siguiente →</Link>}</nav>}
+    </section><PlantControls id={id} nickname={plant.nickname} version={plant.version} archived={Boolean(plant.archived_at)} /><CleanupControl warning={search.cleanup === "pending"} />
+  </>;
+}
